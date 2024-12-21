@@ -1,1 +1,39 @@
 
+pipeline {
+    agent {
+        label 'dev'
+    }
+        
+    stages {
+        stage ('Git Checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'jenkins', url: 'https://github.com/leelakrishna2404/pet_shop.git']])
+            }
+        }
+        stage('Move WAR File') {
+            steps {
+                sh '''
+                    mvn clean package
+                    mv target/*.war target/pet.war
+                '''
+            }
+        }
+        stage('Verify Docker') {
+            steps {
+                sh 'docker version'
+            }
+        }
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: 'docker']) {
+                        sh '''
+                            docker build -t leelakrishna1424/petshop:tag123 .
+                            docker push  leelakrishna1424/petshop:tag123
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}

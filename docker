@@ -7,20 +7,18 @@ pipeline {
     stages {
         stage ('Git Checkout') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'jenkins', url: 'https://github.com/leelakrishna2404/pet_shop.git']])
+                git branch:'main',url:'https://github.com/leelakrishna2404/pet_shop.git'
             }
         }
         stage('Move WAR File') {
             steps {
-                sh '''
-                    mvn clean package
-                    mv target/*.war target/pet.war
-                '''
+                sh 'mvn clean package'
             }
         }
-        stage('Verify Docker') {
+        stage('Cleanup') {
             steps {
-                sh 'docker version'
+                sh 'sudo docker rm -f container-1'
+                sh 'sudo docker rmi  leelakrishna1424/petshop:tag123'
             }
         }
         stage('Build and Push Docker Image') {
@@ -31,17 +29,17 @@ pipeline {
                             docker build -t leelakrishna1424/petshop:tag123 .
                             docker push  leelakrishna1424/petshop:tag123
                         '''
-                    }
-                }
+                 }
             }
+        }
               
-        stage('Cleanup') {
+        stage('to deploy tomcat'){
             steps {
-                echo 'Removing unused docker containers and images..'
-                sh 'docker ps -aq | xargs --no-run-if-empty docker rm'
-                sh 'docker images -q | xargs --no-run-if-empty docker rmi'
-                sh 'docker pull leelakrishna1424/petshop:tag123'
+                script{
+                    sh'docker run -d -p 9090:8080 --name container-1 leelakrishna1424/petshop:tag123'
+               }
            }
        }
-    }
+  }
 }
+
